@@ -6,7 +6,7 @@ import tkinter.messagebox as messagebox
 # --- 相対インポートを使用して同じパッケージ内のモジュールをインポート ---
 # 同じ 'src' パッケージ内の image_utils.py からユーティリティ関数をインポート
 from .image_utils import (fx_templatematch, fx_trim, fx_append_txt,
-                           fx_move_and_rename, fx_save_trim_img)
+                          fx_move_and_rename, fx_save_trim_img)
 
 # --- メイン処理ロジック ---
 
@@ -100,13 +100,13 @@ def main_processing(gui, script_dir, positions, input_imgs_dir):
                 # 画像をトリミング
                 cropped_img = input_img.crop((l_abs, t_abs, r_abs, b_abs))
             except Exception as e:
-                 # トリミング中のエラーを処理 (例: 無効な座標)
-                 print(f"画像 {input_img_name} のポジション {idx} のトリミングエラー: {e}。ポジションをスキップします。")
-                 all_positions_processed_successfully = False # 未完了としてマーク
-                 completed_tasks += 1 # とにかく完了タスクをインクリメント
-                 gui.update_progress((completed_tasks / max(total_tasks, 1)) * 100)
-                 gui.root.update_idletasks()
-                 continue # 次のポジションへ
+                # トリミング中のエラーを処理 (例: 無効な座標)
+                print(f"画像 {input_img_name} のポジション {idx} のトリミングエラー: {e}。ポジションをスキップします。")
+                all_positions_processed_successfully = False # 未完了としてマーク
+                completed_tasks += 1 # とにかく完了タスクをインクリメント
+                gui.update_progress((completed_tasks / max(total_tasks, 1)) * 100)
+                gui.root.update_idletasks()
+                continue # 次のポジションへ
 
             # --- テンプレートマッチング ---
             # このポジションタイプの参照画像を含むディレクトリ
@@ -119,8 +119,8 @@ def main_processing(gui, script_dir, positions, input_imgs_dir):
             try:
                 # マッチングディレクトリが存在しない場合は作成
                 if not os.path.exists(match_img_dir):
-                     print(f"警告: マッチ画像ディレクトリが見つかりません: {match_img_dir}。作成します。")
-                     os.makedirs(match_img_dir)
+                    print(f"警告: マッチ画像ディレクトリが見つかりません: {match_img_dir}。作成します。")
+                    os.makedirs(match_img_dir)
 
                 # ディレクトリ内の既存の参照画像のリストを取得
                 files_match = sorted([
@@ -170,12 +170,12 @@ def main_processing(gui, script_dir, positions, input_imgs_dir):
                         # 選択肢ファイルから名前を読み取る
                         with open(name_list_path, 'r', encoding='utf-8') as f:
                             name_list = [line.strip() for line in f if line.strip()]
-                        print(f"    {choice_file} から {len(name_list)} 個の選択肢をロードしました")
+                        print(f"      {choice_file} から {len(name_list)} 個の選択肢をロードしました")
                     except FileNotFoundError:
-                        print(f"    選択肢リストファイルが見つかりません: {name_list_path}。フリー入力のみ許可します。")
+                        print(f"      選択肢リストファイルが見つかりません: {name_list_path}。フリー入力のみ許可します。")
                         name_list = [] # ファイルが見つからない場合は空リストを保証
                     except Exception as e:
-                        print(f"    選択肢リストファイル {name_list_path} の読み取りエラー: {e}")
+                        print(f"      選択肢リストファイル {name_list_path} の読み取りエラー: {e}")
                         name_list = []
 
                 # ボタンアイコンのベースディレクトリ (ルート内の相対パス)
@@ -205,21 +205,21 @@ def main_processing(gui, script_dir, positions, input_imgs_dir):
                         # アイコンファイルが既に存在するか確認
                         if not os.path.exists(target_icon_full_path):
                             # アイコンが存在しない場合にのみ保存
-                            print(f"    新しいアイコンを保存中: {target_icon_full_path}")
+                            print(f"      新しいアイコンを保存中: {target_icon_full_path}")
                             # num=0でfx_save_trim_imgを呼び出す。ベースファイルが存在しないことを
                             # 既に知っているので、番号は追記されません。
                             # 必要に応じてディレクトリ作成も処理します。
                             fx_save_trim_img(cropped_img, icon_save_path, chosen_name, 0)
                         else:
                             # アイコンは既に存在します。上書きしたり、番号付きで保存したりしないでください。
-                            print(f"    アイコンは既に存在します: {target_icon_full_path}。アイコンの保存をスキップします。")
+                            print(f"      アイコンは既に存在します: {target_icon_full_path}。アイコンの保存をスキップします。")
                     else:
                         # 対戦相手カテゴリの場合はアイコン保存をスキップする
-                        print(f"    対戦相手カテゴリなので、アイコンの保存をスキップします: {chosen_name}")
+                        print(f"      対戦相手カテゴリなので、アイコンの保存をスキップします: {chosen_name}")
 
                 else:
                     # ユーザーはおそらく入力プロンプトを閉じたかキャンセルしました
-                    print(f"    ユーザーはポジション {idx} の入力を提供しませんでした。スキップします。")
+                    print(f"      ユーザーはポジション {idx} の入力を提供しませんでした。スキップします。")
                     data[idx] = "" # 不足データを示すために空文字列またはNoneを格納
                     all_positions_processed_successfully = False # 未完了としてマーク
 
@@ -251,9 +251,8 @@ def main_processing(gui, script_dir, positions, input_imgs_dir):
                 # 履歴フォルダ内の新しいファイル名をデータに追加
                 output_data.append(moved_filename)
                 # テキストファイル用にタブでデータ項目を結合
-                output_line = '\t'.join(map(str, output_data))
+                output_line = '\t'.join(map(str, output_data[0:1] + output_data[2:]))
                 # 結果行を適切な結果ファイルに追記
-                # 結果ファイルの場所を特定するために script_dir (ルート) を使用
                 fx_append_txt(result_file_prefix, output_line, script_dir)
                 print(f"  データを記録し、'{input_img_name}' を履歴に '{moved_filename}' として移動しました。")
             else:
