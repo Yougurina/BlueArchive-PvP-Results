@@ -1,11 +1,13 @@
 ## これはなに？
 戦術対抗戦のリザルト画像から、テンプレートマッチングを用いて文字起こしをするツールです。  
-生成したテキストは下記のスプレッドシートに転記することを想定しています。（転記の機構は書いてない）  
+生成したテキストは下記のスプレッドシートに転記することを想定しています。  
 [対抗戦管理シート](https://docs.google.com/spreadsheets/d/12KPs3jY6IbdQOeOLc9a1Pgb9oAaiYB4bbUED37Il09U/) 
 ## 使い方
+導入に関する詳細はこちらを参照してください。  
+[導入解説記事](https://note.com/sisisirasu/n/ndb5d1f0260bf) 
 1. パッケージインストール  
 コマンドプロンプトを開き、以下のコマンドを入力して必要なライブラリをインストールしてください。  
-「pip install numpy Pillow opencv-python requests beautifulsoup4」
+コピペ用：pip install numpy Pillow opencv-python requests beautifulsoup4 google-api-python-client google-auth google-auth-oauthlib
 
 1. 初期設定  
 「初期設定.html」を起動してください。  
