@@ -69,115 +69,21 @@ def authenticate_google_sheets(service_account_file):
 
 
 def get_last_row(service, spreadsheet_id, worksheet_name):
-    """指定されたワークシートのB列の最終行を取得"""
+    """指定されたワークシートのA列の最終行を取得"""
     try:
-        range_name = f"{worksheet_name}!B:B"
+        range_name = f"{worksheet_name}!A:A"
         result = service.spreadsheets().values().get(
             spreadsheetId=spreadsheet_id, range=range_name).execute()
         
         values = result.get('values', [])
-        # 空でない値がある最後の行を探す
-        last_row = 0
-        for i, row in enumerate(values):
-            if row and len(row) > 0 and row[0].strip():  # 空でない値がある場合
-                last_row = i + 1
-        return last_row
+        return len(values)
     except HttpError as e:
         print(f"最終行取得エラー: {e}")
         return 0
 
 
-def convert_checkbox_value(value):
-    """チェックボックス用の値を変換"""
-    if isinstance(value, str):
-        value_upper = value.upper().strip()
-        if value_upper in ['TRUE', '1', 'YES', 'チェック', 'ON']:
-            return True
-        elif value_upper in ['FALSE', '0', 'NO', 'OFF', '']:
-            return False
-        else:
-            # 数値の場合
-            try:
-                num_value = float(value)
-                return num_value != 0
-            except ValueError:
-                return False
-    elif isinstance(value, bool):
-        return value
-    elif isinstance(value, (int, float)):
-        return value != 0
-    else:
-        return False
-
-
-def expand_sheet_if_needed(service, spreadsheet_id, worksheet_name, required_rows, required_cols):
-    """必要に応じてシートのサイズを拡張"""
-    try:
-        # 現在のシート情報を取得
-        sheet_metadata = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
-        sheet_info = None
-        sheet_id = None
-        
-        for sheet in sheet_metadata.get('sheets', []):
-            if sheet.get('properties', {}).get('title') == worksheet_name:
-                sheet_info = sheet.get('properties', {})
-                sheet_id = sheet_info.get('sheetId')
-                break
-        
-        if sheet_info is None:
-            print(f"ワークシート '{worksheet_name}' が見つかりませんでした")
-            return False
-        
-        current_rows = sheet_info.get('gridProperties', {}).get('rowCount', 1000)
-        current_cols = sheet_info.get('gridProperties', {}).get('columnCount', 26)
-        
-        # 拡張が必要かチェック
-        need_expansion = False
-        new_rows = current_rows
-        new_cols = current_cols
-        
-        if required_rows > current_rows:
-            new_rows = required_rows + 100  # 余裕を持って100行追加
-            need_expansion = True
-            
-        if required_cols > current_cols:
-            new_cols = required_cols + 5  # 余裕を持って5列追加
-            need_expansion = True
-        
-        if need_expansion:
-            print(f"シートサイズを拡張します: {current_rows}→{new_rows}行, {current_cols}→{new_cols}列")
-            
-            # シートサイズを拡張
-            requests = [{
-                'updateSheetProperties': {
-                    'properties': {
-                        'sheetId': sheet_id,
-                        'gridProperties': {
-                            'rowCount': new_rows,
-                            'columnCount': new_cols
-                        }
-                    },
-                    'fields': 'gridProperties.rowCount,gridProperties.columnCount'
-                }
-            }]
-            
-            body = {'requests': requests}
-            service.spreadsheets().batchUpdate(
-                spreadsheetId=spreadsheet_id,
-                body=body
-            ).execute()
-            
-            print(f"シートサイズの拡張が完了しました")
-        
-        return True
-        
-    except HttpError as e:
-        print(f"シートサイズ拡張エラー: {e}")
-        return False
-
-
 def write_data_to_sheets(service, spreadsheet_id, worksheet_name, data_rows, start_row):
-    """スプレッドシートにデータを一括書き込み（チェックボックス対応版）"""
+    """スプレッドシートにデータを一括書き込み"""
     try:
         if not data_rows:
             print("書き込むデータがありません")
@@ -188,8 +94,15 @@ def write_data_to_sheets(service, spreadsheet_id, worksheet_name, data_rows, sta
         for row in data_rows:
             converted_row = []
             for i, cell in enumerate(row):
-                if i == 2:  # C列（2列目）のみチェックボックス
-                    converted_row.append(convert_checkbox_value(cell))
+                if i == 0:  # 日付列
+                    converted_row.append(cell)
+                elif i == 2:  # 真偽値列
+                    if cell.upper() == 'TRUE':
+                        converted_row.append(True)
+                    elif cell.upper() == 'FALSE':
+                        converted_row.append(False)
+                    else:
+                        converted_row.append(cell)
                 else:
                     converted_row.append(cell)
             converted_data.append(converted_row)
@@ -210,79 +123,22 @@ def write_data_to_sheets(service, spreadsheet_id, worksheet_name, data_rows, sta
         end_col = num_to_col_letters(num_cols)
         range_name = f"{worksheet_name}!A{start_row}:{end_col}{end_row}"
         
-        # データを書き込み（RAW入力で上書き）
+        # データを書き込み
         body = {'values': converted_data}
         result = service.spreadsheets().values().update(
             spreadsheetId=spreadsheet_id,
             range=range_name,
-            valueInputOption='RAW',  # RAWに変更してチェックボックスを上書き
+            valueInputOption='USER_ENTERED',
             body=body
         ).execute()
         
         updated_cells = result.get('updatedCells', 0)
         print(f"スプレッドシート「{worksheet_name}」に {updated_cells} セルのデータを書き込みました")
         print(f"書き込み範囲: {range_name}")
-        
-        # チェックボックス列の再設定
-        setup_checkbox_validation(service, spreadsheet_id, worksheet_name, start_row, end_row)
-        
         return True
         
     except HttpError as e:
         print(f"スプレッドシート書き込みエラー: {e}")
-        return False
-
-
-def setup_checkbox_validation(service, spreadsheet_id, worksheet_name, start_row, end_row):
-    """指定範囲にチェックボックスの検証ルールを設定"""
-    try:
-        # ワークシートIDを取得
-        sheet_metadata = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
-        sheet_id = None
-        for sheet in sheet_metadata.get('sheets', []):
-            if sheet.get('properties', {}).get('title') == worksheet_name:
-                sheet_id = sheet.get('properties', {}).get('sheetId')
-                break
-        
-        if sheet_id is None:
-            print(f"ワークシート '{worksheet_name}' が見つかりませんでした")
-            return False
-        
-        # チェックボックスの検証ルールを設定
-        requests = []
-        
-        # C列のチェックボックス設定のみ
-        requests.append({
-            'setDataValidation': {
-                'range': {
-                    'sheetId': sheet_id,
-                    'startRowIndex': start_row - 1,
-                    'endRowIndex': end_row,
-                    'startColumnIndex': 2,  # C列
-                    'endColumnIndex': 3
-                },
-                'rule': {
-                    'condition': {
-                        'type': 'BOOLEAN'
-                    },
-                    'inputMessage': 'チェックボックス',
-                    'strict': True
-                }
-            }
-        })
-        
-        # 一括実行
-        body = {'requests': requests}
-        service.spreadsheets().batchUpdate(
-            spreadsheetId=spreadsheet_id,
-            body=body
-        ).execute()
-        
-        print(f"C列のチェックボックス設定を完了しました (行 {start_row}-{end_row})")
-        return True
-        
-    except HttpError as e:
-        print(f"チェックボックス設定エラー: {e}")
         return False
 
 
