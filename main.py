@@ -6,7 +6,7 @@ import sys
 from src.updatalist import updata_list
 from src.gui import ImageClassifierGUI
 from src.processing import main_processing
-from src import positions
+from src import select_preset
 from src.transcription import main as transcription_main
 
 # --- ディレクトリ設定 ---
@@ -17,7 +17,13 @@ except NameError:
 
 # --- 設定 ---
 updata_list(script_dir) # 生徒リストの更新
-positions = positions.positions # 座標取得
+
+try:
+    positions = select_preset.run() # 使用するプリセットの座標取得
+except:
+    print("\nエラー: プリセットが存在しません。処理を終了します。")
+    sys.exit(1)
+
 input_imgs_dir = os.path.join(script_dir, "Screenshots") # 入力画像ディレクトリを定義
 
 def cleanup_and_transcribe():
